@@ -1,0 +1,322 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Trésorerie</h1>
+    <p class="page-subtitle">
+      @if (isCandidatRole()) {
+        <span class="text-secondary">Mes paiements et échéances</span>
+      } @else {
+        <span class="text-secondary">Suivi des encaissements, charges et soldes</span>
+      }
+    </p>
+  </div>
+  @if (isCandidatRole()) {
+    <div class="context-pill context-pill--silver">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      Lecture seule · mes paiements
+    </div>
+  }
+</div>
+
+@if (successMessage) {
+  <div class="toast-success">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:8px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    {{ successMessage }}
+  </div>
+}
+
+@if (!isCandidatRole()) {
+  <div style="display:flex; gap:12px; align-items:center; margin-bottom:24px; flex-wrap:wrap; justify-content:space-between;">
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <span style="font-size:13px; color: var(--text-secondary);">Période :</span>
+      @for (p of ['SEMAINE', 'MOIS', 'TRIMESTRE', 'ANNEE']; track p) {
+        <button
+          class="btn btn-inline"
+          [style.background]="periode === p ? 'var(--chrome-silver)' : 'transparent'"
+          [style.color]="periode === p ? '#1C1C1D' : 'var(--text-primary)'"
+          [style.borderColor]="periode === p ? 'var(--chrome-silver)' : 'var(--border)'"
+          (click)="setPeriode(p)">
+          {{ getPeriodeLabel(p) }}
+        </button>
+      }
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-primary" (click)="exporterComptable()" [disabled]="loading">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Exporter Excel
+      </button>
+    </div>
+  </div>
+}
+
+@if (loading || !balance) {
+  <div style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">Chargement...</div>
+} @else if (isCandidatRole()) {
+  <div class="metric-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+    <div class="metric-card">
+      <div class="metric-label">Montant total payé</div>
+      <div class="metric-value text-go">{{ getMontantDH(balance.totalPaiements) }}</div>
+      <div class="metric-sub">{{ getPaiementsLength() }} paiement{{ getPaiementsLength() > 1 ? 's' : '' }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Acomptes versés</div>
+      <div class="metric-value text-orange">{{ getMontantDH(balance.totalPaiementsAvance) }}</div>
+      <div class="metric-sub">Pré-financement</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Versements réguliers</div>
+      <div class="metric-value">{{ getMontantDH(balance.totalPaiementsVersement) }}</div>
+      <div class="metric-sub">Paiements planifiés</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Dernière mise à jour</div>
+      <div class="metric-value" style="font-size:16px;">{{ balance.dateFin }}</div>
+      <div class="metric-sub">{{ getPaiementsLength() > 0 ? 'à jour' : 'aucun paiement' }}</div>
+    </div>
+  </div>
+} @else {
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="metric-label">Total encaissements {{ getPeriodeTexte() }}</div>
+      <div class="metric-value text-go">{{ getMontantDH(balance.totalPaiements) }}</div>
+      <div style="font-size:12px; color: var(--text-secondary); margin-top:8px;">
+        {{ balance.nombrePaiements }} paiement{{ balance.nombrePaiements > 1 ? 's' : '' }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total charges {{ getPeriodeTexte() }}</div>
+      <div class="metric-value text-stop">{{ getMontantDH(balance.totalCharges) }}</div>
+      <div style="font-size:12px; color: var(--text-secondary); margin-top:8px;">
+        {{ balance.nombreCharges }} charge{{ balance.nombreCharges > 1 ? 's' : '' }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Solde net</div>
+      <div class="metric-value" [ngClass]="getSoldeClass(balance.soldeNet)">{{ getMontantDH(balance.soldeNet) }}</div>
+      <div style="font-size:12px; color: var(--text-secondary); margin-top:8px;">
+        {{ balance.dateDebut }} → {{ balance.dateFin }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Répartition</div>
+      <div class="solde-row">
+        <span class="solde-label">Acomptes</span>
+        <span class="solde-value">{{ getMontantDH(balance.totalPaiementsAvance) }}</span>
+      </div>
+      <div class="solde-row" style="border:none; padding-bottom:0;">
+        <span class="solde-label">Versements</span>
+        <span class="solde-value">{{ getMontantDH(balance.totalPaiementsVersement) }}</span>
+      </div>
+    </div>
+  </div>
+}
+
+<div class="tabs-row" style="margin-top:24px;">
+  <div
+    class="tab-item"
+    [ngClass]="{ active: ongletActif === 'PAIEMENTS' }"
+    (click)="ongletActif = 'PAIEMENTS'">
+    💶 Paiements
+    <span class="badge badge-gray" style="margin-left:8px;">{{ getPaiementsLength() }}</span>
+  </div>
+  @if (showChargesTab()) {
+    <div
+      class="tab-item"
+      [ngClass]="{ active: ongletActif === 'CHARGES' }"
+      (click)="ongletActif = 'CHARGES'">
+      📋 Charges
+      <span class="badge badge-gray" style="margin-left:8px;">{{ getChargesLength() }}</span>
+    </div>
+  }
+</div>
+
+@if (ongletActif === 'PAIEMENTS') {
+  @if (canWriteTresorerie()) {
+    <div class="actions-bar">
+      <button class="btn btn-primary" (click)="ouvrirPaiement()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Enregistrer un paiement
+      </button>
+    </div>
+  }
+
+  @if (showPaiementForm) {
+    <div class="form-section">
+      <h2 class="form-section-title">Nouveau paiement</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Candidat *</label>
+          <select class="form-input" [(ngModel)]="formPaiement.candidatId">
+            <option [ngValue]="0">— Sélectionner —</option>
+            @for (c of candidats; track c.id) {
+              <option [ngValue]="c.id">{{ c.prenom }} {{ c.nom }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Montant (DH) *</label>
+          <input class="form-input" type="number" [(ngModel)]="formPaiement.montant" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mode de paiement *</label>
+          <select class="form-input" [(ngModel)]="formPaiement.modePaiement">
+            @for (m of modesPaiement; track m.v) { <option [value]="m.v">{{ m.l }}</option> }
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type *</label>
+          <select class="form-input" [(ngModel)]="formPaiement.type">
+            @for (t of typesPaiement; track t.v) { <option [value]="t.v">{{ t.l }}</option> }
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date *</label>
+          <input class="form-input" type="date" [(ngModel)]="formPaiement.date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL reçu (optionnel)</label>
+          <input class="form-input" [(ngModel)]="formPaiement.recuUrl" placeholder="https://..." />
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; margin-top:12px;">
+        <button class="btn" (click)="showPaiementForm = false">Annuler</button>
+        <button class="btn btn-primary" (click)="soumettrePaiement()">Enregistrer</button>
+      </div>
+    </div>
+  }
+
+  <table class="dense-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Candidat</th>
+        <th>Type</th>
+        <th>Mode</th>
+        <th>Montant</th>
+        <th>Reçu</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (p of getPaiementsList(); track p.id) {
+        <tr>
+          <td class="text-secondary">{{ formatDate(p.date) }}</td>
+          <td class="text-primary" style="font-weight:500;">{{ getCandidatNomComplet(p) }}</td>
+          <td><span class="badge" [ngClass]="getTypePaiementBadgeClass(p.type)">{{ p.type }}</span></td>
+          <td class="text-secondary">{{ getModePaiementLabel(p.modePaiement) }}</td>
+          <td style="font-weight:500;">{{ getMontantDH(p.montant) }}</td>
+          <td>
+            @if (p.recuUrl) {
+              <a [href]="p.recuUrl" target="_blank" class="btn btn-inline" title="Télécharger reçu">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </a>
+            } @else {
+              <span style="color: var(--text-secondary);">—</span>
+            }
+          </td>
+        </tr>
+      }
+      @if (getPaiementsLength() === 0) {
+        <tr>
+          <td colspan="6" style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+            Aucun paiement enregistré
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@if (ongletActif === 'CHARGES') {
+  @if (canWriteTresorerie()) {
+    <div class="actions-bar">
+      <button class="btn btn-primary" (click)="ouvrirCharge()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        Ajouter une charge
+      </button>
+    </div>
+  }
+
+  @if (showChargeForm) {
+    <div class="form-section">
+      <h2 class="form-section-title">Nouvelle charge</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Catégorie *</label>
+          <select class="form-input" [(ngModel)]="formCharge.categorie">
+            @for (c of categoriesCharge; track c.v) { <option [value]="c.v">{{ c.l }}</option> }
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Montant (DH) *</label>
+          <input class="form-input" type="number" [(ngModel)]="formCharge.montant" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Périodicité *</label>
+          <select class="form-input" [(ngModel)]="formCharge.periodicite">
+            @for (p of periodicites; track p.v) { <option [value]="p.v">{{ p.l }}</option> }
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date *</label>
+          <input class="form-input" type="date" [(ngModel)]="formCharge.date" />
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+          <label class="form-label">URL justificatif (optionnel)</label>
+          <input class="form-input" [(ngModel)]="formCharge.justificatifUrl" placeholder="https://..." />
+        </div>
+      </div>
+      <div style="display:flex; gap:12px; margin-top:12px;">
+        <button class="btn" (click)="showChargeForm = false">Annuler</button>
+        <button class="btn btn-primary" (click)="soumettreCharge()">Enregistrer</button>
+      </div>
+    </div>
+  }
+
+  <table class="dense-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Catégorie</th>
+        <th>Périodicité</th>
+        <th>Montant</th>
+        <th>Justificatif</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of getChargesList(); track c.id) {
+        <tr>
+          <td class="text-secondary">{{ formatDate(c.date) }}</td>
+          <td>
+            <span class="badge" [ngClass]="getCategorieChargeBadgeClass(c.categorie)">
+              {{ getCategorieChargeLabel(c.categorie) }}
+            </span>
+          </td>
+          <td class="text-secondary">{{ getPeriodiciteLabel(c.periodicite) }}</td>
+          <td style="font-weight:500; color: var(--signal-stop);">{{ getMontantDH(c.montant) }}</td>
+          <td>
+            @if (c.justificatifUrl) {
+              <a [href]="c.justificatifUrl" target="_blank" class="btn btn-inline" title="Voir justificatif">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+              </a>
+            } @else {
+              <span style="color: var(--text-secondary);">—</span>
+            }
+          </td>
+        </tr>
+      }
+      @if (getChargesLength() === 0) {
+        <tr>
+          <td colspan="5" style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+            Aucune charge enregistrée
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

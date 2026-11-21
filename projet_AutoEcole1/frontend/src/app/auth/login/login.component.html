@@ -1,0 +1,126 @@
+<div class="login-wrapper">
+  <aside class="login-hero" aria-hidden="false">
+    <div class="login-hero__content">
+      <div class="login-hero__brand">Auto-<em>École</em></div>
+      <span class="login-hero__accent"></span>
+      <p class="login-hero__tagline">
+        L’espace privé de votre école de conduite — planning, formation et trésorerie, réunis avec précision.
+      </p>
+    </div>
+  </aside>
+
+  <div class="login-panel">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">A</div>
+        <h1 class="login-title">Bienvenue</h1>
+        <p class="login-subtitle">Connectez-vous à votre salon de conduite</p>
+      </div>
+
+      @if (errorMessage) {
+        <div class="error-banner">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input
+            class="form-input"
+            type="email"
+            formControlName="email"
+            placeholder="vous@exemple.ma"
+          />
+          @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+            <div class="form-error">
+              @if (loginForm.get('email')?.errors?.['required']) {
+                Email requis
+              } @else if (loginForm.get('email')?.errors?.['email']) {
+                Email invalide
+              }
+            </div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <input
+            class="form-input"
+            type="password"
+            formControlName="password"
+            placeholder="••••••••"
+          />
+          @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+            <div class="form-error">
+              @if (loginForm.get('password')?.errors?.['required']) {
+                Mot de passe requis
+              } @else if (loginForm.get('password')?.errors?.['minlength']) {
+                6 caractères minimum
+              }
+            </div>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="loading || loginForm.invalid">
+            @if (loading) {
+              Chargement...
+            } @else {
+              Entrer dans l’espace
+            }
+          </button>
+        </div>
+      </form>
+
+      <div class="accounts-panel">
+        <div class="accounts-title">Comptes de démonstration</div>
+        <table class="accounts-table">
+          <tbody>
+            @for (a of accounts; track a.email) {
+              <tr>
+                <td class="accounts-role">{{ a.role }}</td>
+                <td class="accounts-email"><code>{{ a.email }}</code></td>
+                <td class="accounts-pswd"><code>password123</code></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="login-divider"><span>accès rapide</span></div>
+
+      <button type="button" class="demo-toggle" (click)="showDemo = !showDemo">
+        {{ showDemo ? 'Masquer' : 'Afficher' }} les profils (sans backend)
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [style.transform]="showDemo ? 'rotate(180deg)' : 'none'" style="transition: transform .2s;">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
+      @if (showDemo) {
+        <div class="demo-grid" style="margin-top:14px;">
+          @for (p of presets; track p.role) {
+            <button
+              type="button"
+              class="demo-card"
+              [class]="'demo-card--' + p.accent"
+              [disabled]="loading"
+              (click)="connexionRapide(p.role)">
+              <div class="demo-icon">{{ p.icon }}</div>
+              <div class="demo-body">
+                <div class="demo-label">{{ p.label }}</div>
+                <div class="demo-desc">{{ p.description }}</div>
+              </div>
+              <svg class="demo-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          }
+        </div>
+        <div class="demo-hint">
+          <strong>Astuce :</strong> mode local. Lancez PostgreSQL + le backend pour une connexion JWT réelle.
+        </div>
+      }
+    </div>
+  </div>
+</div>

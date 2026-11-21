@@ -1,0 +1,106 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Candidats</h1>
+    <p class="page-subtitle">
+      @if (isMoniteurRole()) {
+        <span class="text-secondary">Vos élèves assignés</span>
+      } @else if (canWrite()) {
+        <span class="text-secondary">Gestion complète des élèves et dossiers</span>
+      } @else {
+        <span class="text-secondary">Consultation des dossiers</span>
+      }
+    </p>
+  </div>
+  @if (isMoniteurRole()) {
+    <div class="context-pill context-pill--warn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      Lecture seule · uniquement vos élèves
+    </div>
+  }
+</div>
+
+<div class="actions-bar">
+  @if (canWrite()) {
+    <button class="btn btn-primary" routerLink="/candidats/nouveau">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Nouveau candidat
+    </button>
+  }
+  <input
+    class="form-input search-input"
+    type="text"
+    [(ngModel)]="searchTerm"
+    placeholder="Rechercher par nom ou CIN..."
+  />
+  <div class="page-count">{{ candidatsFiltres.length }} élève{{ candidatsFiltres.length !== 1 ? 's' : '' }}</div>
+</div>
+
+@if (loading) {
+  <div style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+    Chargement...
+  </div>
+} @else {
+  <table class="dense-table">
+    <thead>
+      <tr>
+        <th>Nom prénom</th>
+        <th>CIN</th>
+        <th>Catégorie</th>
+        <th>Statut parcours</th>
+        <th>Heures conduite</th>
+        <th>Solde</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of candidatsFiltres; track c.id || c.cin) {
+        <tr>
+          <td class="text-primary" style="font-weight:500;">{{ c.prenom }} {{ c.nom }}</td>
+          <td class="text-secondary">{{ c.cin }}</td>
+          <td>
+            <span class="badge" [ngClass]="getCategorieBadgeClass(c.categoriePermis)">{{ c.categoriePermis }}</span>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatutDisplay(c.statutParcours).class">
+              {{ getStatutDisplay(c.statutParcours).text }}
+            </span>
+          </td>
+          <td>{{ getHeuresForfait(c) }}</td>
+          <td [ngClass]="getSoldeColor(c.solde ?? 0)">
+            {{ getSoldeText(c.solde ?? 0) }}
+          </td>
+          <td>
+            <button class="btn btn-inline" (click)="voirDetail(c.id)" title="Voir détail">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+            @if (canWrite()) {
+              <button class="btn btn-inline" style="margin-left:6px;" (click)="editer(c.id)" title="Éditer">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+              </button>
+            }
+          </td>
+        </tr>
+      }
+      @if (candidatsFiltres.length === 0) {
+        <tr>
+          <td colspan="7" style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+            @if (isMoniteurRole()) {
+              Aucun élève ne vous est assigné
+            } @else {
+              Aucun candidat enregistré
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

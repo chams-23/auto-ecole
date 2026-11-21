@@ -1,0 +1,240 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Planning</h1>
+    <p class="page-subtitle">
+      @if (isCandidatRole()) {
+        <span class="text-secondary">Mes séances et réservations de leçons</span>
+      } @else if (isMoniteurRole()) {
+        <span class="text-secondary">Vos séances et disponibilités</span>
+      } @else {
+        <span class="text-secondary">Planning global de toutes les séances (code & conduite)</span>
+      }
+    </p>
+  </div>
+  @if (isCandidatRole()) {
+    <div class="context-pill context-pill--go">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      Réservation autorisée
+    </div>
+  } @else if (isMoniteurRole()) {
+    <div class="context-pill context-pill--warn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+      Uniquement vos séances
+    </div>
+  }
+</div>
+
+@if (successMessage) {
+  <div class="toast-success">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:8px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    {{ successMessage }}
+  </div>
+}
+
+<div class="actions-bar">
+  @if (canCreateReservation()) {
+    <button class="btn btn-primary" (click)="ouvrirForm()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Nouvelle séance
+    </button>
+  }
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <button class="btn btn-inline" (click)="changerSemaine(-7)" title="Semaine précédente">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <input class="form-input" type="date" [(ngModel)]="filtreDate" (change)="loadSeances()" style="width:170px;" />
+    <button class="btn btn-inline" (click)="changerSemaine(7)" title="Semaine suivante">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </button>
+    @if (!isMoniteurRole()) {
+      <select class="form-input" [(ngModel)]="filtreMoniteur" (change)="loadSeances()" style="width:180px;">
+        <option [ngValue]="null">Tous les moniteurs</option>
+        @for (m of moniteurs; track m.id) {
+          <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }}</option>
+        }
+      </select>
+    }
+    @if (!isCandidatRole()) {
+      <select class="form-input" [(ngModel)]="filtreCandidat" (change)="loadSeances()" style="width:180px;">
+        <option [ngValue]="null">Tous les candidats</option>
+        @for (c of candidats; track c.id) {
+          <option [ngValue]="c.id">{{ c.prenom }} {{ c.nom }}</option>
+        }
+      </select>
+    }
+  </div>
+</div>
+
+@if (showForm) {
+  <div class="form-section">
+    <h2 class="form-section-title">Créer une séance</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Type *</label>
+        <select class="form-input" [(ngModel)]="form.type">
+          @for (t of typesSeance; track t.value) { <option [value]="t.value">{{ t.icon }} {{ t.label }}</option> }
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date *</label>
+        <input class="form-input" type="date" [(ngModel)]="form.date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Heure début *</label>
+        <input class="form-input" type="time" [(ngModel)]="form.heureDebut" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Heure fin *</label>
+        <input class="form-input" type="time" [(ngModel)]="form.heureFin" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Candidat *</label>
+        <select class="form-input" [(ngModel)]="form.candidatId">
+          <option [ngValue]="0">— Sélectionner —</option>
+          @for (c of candidats; track c.id) { <option [ngValue]="c.id">{{ c.prenom }} {{ c.nom }}</option> }
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Moniteur *</label>
+        <select class="form-input" [(ngModel)]="form.intervenantId">
+          <option [ngValue]="0">— Sélectionner —</option>
+          @for (m of moniteurs; track m.id) { <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }}</option> }
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Kilométrage (optionnel)</label>
+        <input class="form-input" type="number" [(ngModel)]="form.kilometrage" placeholder="km" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observations (optionnel)</label>
+        <input class="form-input" [(ngModel)]="form.observations" placeholder="Notes..." />
+      </div>
+    </div>
+    <div style="display:flex; gap:12px; margin-top:12px;">
+      <button class="btn" (click)="fermerForm()">Annuler</button>
+      <button class="btn btn-primary" (click)="soumettreForm()">Enregistrer</button>
+    </div>
+  </div>
+}
+
+@if (loading) {
+  <div style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">Chargement...</div>
+} @else {
+  @if (seancesGroupeesParJour().length === 0) {
+    <div style="text-align:center; color: var(--text-secondary); padding: 48px 16px; background: var(--bg-surface); border:1px solid var(--border); border-radius:12px;">
+      Aucune séance programmée pour cette période
+    </div>
+  } @else {
+    @for (g of seancesGroupeesParJour(); track g.dateIso) {
+      <div class="detail-section" style="margin-bottom:20px;">
+        <div class="detail-header" style="margin-bottom:16px;">
+          <h2 style="font-size:16px; font-weight:500; text-transform:capitalize;">{{ g.jour }}</h2>
+          <span class="badge badge-gray">{{ g.items.length }} séance{{ g.items.length > 1 ? 's' : '' }}</span>
+        </div>
+        <table class="dense-table">
+          <thead>
+            <tr>
+              <th>Horaire</th>
+              <th>Type</th>
+              <th>Candidat</th>
+              <th>Moniteur</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of g.items; track s.id) {
+              <tr>
+                <td class="text-primary" style="font-weight:500;">{{ s.heureDebut }} → {{ s.heureFin }}</td>
+                <td><span class="badge" [ngClass]="getTypeBadgeClass(s.type)">{{ getTypeLabel(s.type) }}</span></td>
+                <td>{{ getCandidatNom(s) }}</td>
+                <td class="text-secondary">{{ getIntervenantNom(s) }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="getStatutBadge(s.statutValidation).class">
+                    {{ getStatutBadge(s.statutValidation).text }}
+                  </span>
+                </td>
+                <td>
+                  <button class="btn btn-inline" (click)="ouvrirWorkflow(s)" title="Gérer le workflow">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M9 11l3 3L22 4"></path>
+                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                  </button>
+                  @if (peutSupprimer(s)) {
+                    <button class="btn btn-inline" style="margin-left:6px;" (click)="supprimer(s.id)" title="Supprimer">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"></path>
+                      </svg>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+}
+
+@if (showWorkflowModal && selectedSeance) {
+  <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:200;">
+    <div class="login-card" style="max-width:480px;">
+      <h2 class="form-section-title" style="margin-bottom:8px;">Séance #{{ selectedSeance.id }}</h2>
+      <div style="font-size:13px; color: var(--text-secondary); margin-bottom:20px;">
+        {{ getTypeLabel(selectedSeance.type) }} — {{ selectedSeance.date }} {{ selectedSeance.heureDebut }}-{{ selectedSeance.heureFin }}<br/>
+        Candidat: {{ getCandidatNom(selectedSeance) }} — Moniteur: {{ getIntervenantNom(selectedSeance) }}
+      </div>
+      <div style="margin-bottom:20px;">
+        <label class="form-label">Statut actuel</label>
+        <div>
+          <span class="status-badge" [ngClass]="getStatutBadge(selectedSeance.statutValidation).class">
+            {{ getStatutBadge(selectedSeance.statutValidation).text }}
+          </span>
+        </div>
+      </div>
+      @if (!showContestForm) {
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          @if (peutDeclarer(selectedSeance)) {
+            <button class="btn btn-primary" (click)="declarerEffectuee()">
+              @if (selectedSeance.type === 'CONDUITE') {
+                → Valider séance de conduite (moniteur)
+              } @else {
+                → Valider séance de théorie (secrétaire)
+              }
+            </button>
+          }
+          @if (peutValider(selectedSeance)) {
+            <button class="btn btn-primary" (click)="valider()">
+              ✓ {{ labelValider(selectedSeance) }}
+            </button>
+          }
+          @if (peutContester(selectedSeance)) {
+            <button class="btn" (click)="demanderContestation()">
+              ✕ Contester / signaler une anomalie
+            </button>
+          }
+          @if (!peutDeclarer(selectedSeance) && !peutValider(selectedSeance) && !peutContester(selectedSeance)) {
+            <div style="color: var(--text-secondary); text-align:center; padding:12px;">
+              Aucune action disponible pour ce statut
+            </div>
+          }
+          <button class="btn" (click)="fermerWorkflow()">Fermer</button>
+        </div>
+      } @else {
+        <div class="form-group">
+          <label class="form-label">Motif de contestation</label>
+          <textarea class="form-input" rows="3" [(ngModel)]="contestationObs" placeholder="Décrivez pourquoi cette séance est contestée..."></textarea>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn" style="flex:1;" (click)="showContestForm = false">Annuler</button>
+          <button class="btn btn-primary" style="flex:1;" (click)="confirmerContestation()">Confirmer contestation</button>
+        </div>
+      }
+    </div>
+  </div>
+}

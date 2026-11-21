@@ -1,0 +1,109 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Journal d'Audit</h1>
+    <p class="page-subtitle">
+      <span class="text-secondary">Suivi de toutes les actions et modifications du système</span>
+    </p>
+  </div>
+  <div class="context-pill context-pill--silver">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+    Lecture seule · historique
+  </div>
+</div>
+
+<div class="actions-bar" style="flex-wrap: wrap; gap: 12px;">
+  <div class="form-group" style="margin-bottom: 0; min-width: 160px;">
+    <label class="form-label" style="font-size: 12px;">Date début</label>
+    <input class="form-input" type="date" [(ngModel)]="filtreDateDebut" />
+  </div>
+  <div class="form-group" style="margin-bottom: 0; min-width: 160px;">
+    <label class="form-label" style="font-size: 12px;">Date fin</label>
+    <input class="form-input" type="date" [(ngModel)]="filtreDateFin" />
+  </div>
+  <div class="form-group" style="margin-bottom: 0; min-width: 200px;">
+    <label class="form-label" style="font-size: 12px;">Action</label>
+    <select class="form-input" [(ngModel)]="filtreAction">
+      <option value="">— Toutes les actions —</option>
+      @for (a of actionsAudit; track a.v) {
+        <option [ngValue]="a.v">{{ a.l }}</option>
+      }
+    </select>
+  </div>
+  <div class="form-group" style="margin-bottom: 0; min-width: 160px;">
+    <label class="form-label" style="font-size: 12px;">Utilisateur ID</label>
+    <input class="form-input" type="number" [(ngModel)]="filtreUtilisateurId" placeholder="Ex: 1" />
+  </div>
+  <button class="btn btn-primary" (click)="filtrer()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+    Filtrer
+  </button>
+  <button class="btn" (click)="reinitialiser()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+    Réinitialiser
+  </button>
+</div>
+
+@if (loading) {
+  <div style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+    Chargement...
+  </div>
+} @else {
+  <table class="dense-table">
+    <thead>
+      <tr>
+        <th>Date/Heure</th>
+        <th>Utilisateur</th>
+        <th>Action</th>
+        <th>Description</th>
+        <th>IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (log of getLogsFiltres(); track log.id) {
+        <tr>
+          <td class="text-secondary">{{ formatDateHeure(log.dateCreation) }}</td>
+          <td class="text-primary" style="font-weight:500;">
+            @if (log.utilisateurNom) {
+              {{ log.utilisateurNom }}
+            } @else {
+              Utilisateur #{{ log.utilisateurId }}
+            }
+          </td>
+          <td>
+            <span class="badge" [ngClass]="getActionBadgeClass(log.action)">
+              {{ getActionLabel(log.action) }}
+            </span>
+          </td>
+          <td class="text-secondary">{{ log.description }}</td>
+          <td class="text-secondary">{{ log.adresseIp ?? '—' }}</td>
+        </tr>
+      }
+      @if (getLogsFiltres().length === 0) {
+        <tr>
+          <td colspan="5" style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+            Aucun log d'audit correspondant aux filtres
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 16px; flex-wrap: wrap; gap: 12px;">
+    <div class="page-count">
+      {{ getLogsFiltres().length }} entrée{{ getLogsFiltres().length !== 1 ? 's' : '' }} affichée{{ getLogsFiltres().length !== 1 ? 's' : '' }}
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button class="btn btn-inline" (click)="pagePrecedente()" [disabled]="page <= 1">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        Précédent
+      </button>
+      <span style="color: var(--text-secondary); font-size: 13px; padding: 0 8px;">
+        Page {{ page }} / {{ getTotalPages() }}
+      </span>
+      <button class="btn btn-inline" (click)="pageSuivante()" [disabled]="page >= getTotalPages()">
+        Suivant
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
+    </div>
+  </div>
+}

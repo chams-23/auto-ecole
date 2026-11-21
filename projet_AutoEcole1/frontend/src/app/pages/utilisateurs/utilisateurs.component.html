@@ -1,0 +1,144 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Utilisateurs</h1>
+    <p class="page-subtitle">
+      <span class="text-secondary">Gestion des comptes et permissions de l'auto-école</span>
+    </p>
+  </div>
+</div>
+
+@if (successMessage) {
+  <div class="toast-success">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:8px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    {{ successMessage }}
+  </div>
+}
+
+<div class="actions-bar">
+  @if (canWrite()) {
+    <button class="btn btn-primary" (click)="ouvrirCreer()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Créer utilisateur
+    </button>
+  }
+  <input
+    class="form-input search-input"
+    type="text"
+    [(ngModel)]="searchTerm"
+    placeholder="Rechercher par nom, email ou téléphone..."
+  />
+  <div class="page-count">{{ utilisateursFiltres.length }} utilisateur{{ utilisateursFiltres.length !== 1 ? 's' : '' }}</div>
+</div>
+
+@if (showForm) {
+  <div class="form-section">
+    <h2 class="form-section-title">{{ modeForm === 'CREER' ? 'Nouvel utilisateur' : 'Modifier utilisateur' }}</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Rôle *</label>
+        <select class="form-input" [(ngModel)]="formUtilisateur.role">
+          @for (r of rolesDisponibles; track r.v) {
+            <option [value]="r.v">{{ r.l }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nom *</label>
+        <input class="form-input" type="text" [(ngModel)]="formUtilisateur.nom" placeholder="Ex: Dupont" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prénom *</label>
+        <input class="form-input" type="text" [(ngModel)]="formUtilisateur.prenom" placeholder="Ex: Jean" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email *</label>
+        <input class="form-input" type="email" [(ngModel)]="formUtilisateur.email" placeholder="exemple@domaine.ma" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Téléphone</label>
+        <input class="form-input" type="text" [(ngModel)]="formUtilisateur.telephone" placeholder="0600000000" />
+      </div>
+      @if (modeForm === 'CREER') {
+        <div class="form-group">
+          <label class="form-label">Mot de passe *</label>
+          <input class="form-input" type="password" [(ngModel)]="formUtilisateur.password" placeholder="••••••••" />
+        </div>
+      }
+    </div>
+    <div style="display:flex; gap:12px; margin-top:12px;">
+      <button class="btn" (click)="fermerForm()">Annuler</button>
+      <button class="btn btn-primary" (click)="soumettreForm()" [disabled]="!formEstValide()">
+        {{ modeForm === 'CREER' ? 'Créer' : 'Enregistrer' }}
+      </button>
+    </div>
+  </div>
+}
+
+@if (loading) {
+  <div style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+    Chargement...
+  </div>
+} @else {
+  <table class="dense-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nom</th>
+        <th>Prénom</th>
+        <th>Rôle</th>
+        <th>Email</th>
+        <th>Téléphone</th>
+        <th>Statut</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (u of utilisateursFiltres; track u.id) {
+        <tr>
+          <td class="text-secondary">#{{ u.id }}</td>
+          <td class="text-primary" style="font-weight:500;">{{ u.nom }}</td>
+          <td>{{ u.prenom }}</td>
+          <td>
+            <span class="badge" [ngClass]="getRoleBadgeClass(u.role)">{{ getRoleLabel(u.role) }}</span>
+          </td>
+          <td class="text-secondary">{{ u.email }}</td>
+          <td class="text-secondary">{{ u.telephone || '—' }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatutDisplay(u.statut).class">
+              {{ getStatutDisplay(u.statut).text }}
+            </span>
+          </td>
+          <td>
+            @if (canWrite()) {
+              <button class="btn btn-inline" (click)="ouvrirModifier(u)" title="Modifier">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+              </button>
+            }
+            @if (peutDesactiver(u)) {
+              <button class="btn btn-inline" style="margin-left:6px; color: var(--signal-stop);" (click)="desactiver(u)" title="Désactiver">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+              </button>
+            }
+          </td>
+        </tr>
+      }
+      @if (utilisateursFiltres.length === 0) {
+        <tr>
+          <td colspan="8" style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+            Aucun utilisateur enregistré
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

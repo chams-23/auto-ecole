@@ -1,0 +1,121 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Notifications</h1>
+    <p class="page-subtitle">
+      <span class="text-secondary">
+        @if (nombreNonLues > 0) {
+          <span class="status-badge status-warn" style="margin-right: 6px;">{{ nombreNonLues }} non lu{{ nombreNonLues !== 1 ? 'es' : '' }}</span>
+        }
+        Gestion des alertes et messages
+      </span>
+    </p>
+  </div>
+  @if (nombreNonLues > 0) {
+    <div class="context-pill context-pill--warn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+      </svg>
+      {{ nombreNonLues }} notification{{ nombreNonLues !== 1 ? 's' : '' }} en attente
+    </div>
+  }
+</div>
+
+<div class="actions-bar">
+  <button class="btn btn-primary" (click)="toutMarquerLue()" [disabled]="nombreNonLues === 0">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 11 12 14 22 4"></polyline>
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+    </svg>
+    Tout marquer comme lu
+  </button>
+  <select class="form-input" [(ngModel)]="filtreType" style="max-width: 220px;">
+    <option value="">Tous les types</option>
+    @for (t of typesEvenements; track t.v) {
+      <option [value]="t.v">{{ t.l }}</option>
+    }
+  </select>
+  <select class="form-input" [(ngModel)]="filtreStatut" style="max-width: 160px;">
+    <option value="TOUTES">Toutes</option>
+    <option value="NON_LUES">Non lues</option>
+    <option value="LUES">Lues</option>
+  </select>
+  <input
+    class="form-input search-input"
+    type="text"
+    [(ngModel)]="searchTerm"
+    placeholder="Rechercher dans le contenu..."
+  />
+  <div class="page-count">{{ listeActive.length }} notification{{ listeActive.length !== 1 ? 's' : '' }}</div>
+</div>
+
+@if (loading) {
+  <div style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+    Chargement...
+  </div>
+} @else {
+  <table class="dense-table">
+    <thead>
+      <tr>
+        <th style="width: 56px;"></th>
+        <th>Type & Contenu</th>
+        <th style="width: 160px;">Date</th>
+        <th style="width: 110px;">Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (n of listeActive; track n.id) {
+        <tr
+          [class.cursor-pointer]="!n.statutLecture"
+          [class.notif-non-lue]="!n.statutLecture"
+          (click)="!n.statutLecture && marquerLue(n.id)"
+          title="{{ !n.statutLecture ? 'Cliquer pour marquer comme lu' : '' }}"
+        >
+          <td style="text-align: center;">
+            <span class="status-dot" [ngClass]="'status-dot--' + getTypeEvenementClass(n.typeEvenement).replace('status-', '')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [innerHTML]="getSvgIcon(getTypeEvenementIcon(n.typeEvenement))">
+              </svg>
+            </span>
+          </td>
+          <td>
+            <div style="font-weight: 600; margin-bottom: 3px;">
+              <span class="status-badge" [ngClass]="getTypeEvenementClass(n.typeEvenement)" style="margin-right: 8px;">
+                {{ getTypeEvenementLabel(n.typeEvenement) }}
+              </span>
+              @if (!n.statutLecture) {
+                <span class="text-primary" style="font-size: 12px; font-weight: 700;">●</span>
+              }
+            </div>
+            <div [ngClass]="n.statutLecture ? 'text-secondary' : 'text-primary'" style="line-height: 1.45;">
+              {{ n.contenu }}
+            </div>
+          </td>
+          <td class="text-secondary">
+            {{ formatDate(n.date) }}
+          </td>
+          <td>
+            <span
+              class="badge"
+              [ngClass]="getStatutBadge(n.statutLecture).class"
+              [style.font-weight]="!n.statutLecture ? '700' : '400'"
+              [style.opacity]="n.statutLecture ? '0.7' : '1'"
+            >
+              {{ getStatutBadge(n.statutLecture).text }}
+            </span>
+          </td>
+        </tr>
+      }
+      @if (listeActive.length === 0) {
+        <tr>
+          <td colspan="4" style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block; margin:0 auto 12px; opacity: 0.4;">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            Aucune notification à afficher
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

@@ -1,0 +1,190 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Véhicules</h1>
+    <p class="page-subtitle">
+      @if (canWriteVehicules()) {
+        <span class="text-secondary">Parc automobile et affectations aux moniteurs</span>
+      } @else if (isMoniteurRole()) {
+        <span class="text-secondary">Véhicule qui vous est attribué</span>
+      } @else {
+        <span class="text-secondary">État du parc et documents</span>
+      }
+    </p>
+  </div>
+  @if (!canWriteVehicules()) {
+    <div class="context-pill context-pill--silver">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      Lecture seule
+    </div>
+  }
+</div>
+
+@if (successMessage) {
+  <div class="toast-success">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:8px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    {{ successMessage }}
+  </div>
+}
+
+@if (alertes.length > 0) {
+  <div class="detail-section" style="margin-bottom:24px;">
+    <div class="detail-header">
+      <h2 class="form-section-title" style="margin-bottom:0;">Alertes documents</h2>
+      <span class="badge badge-orange">{{ alertes.length }} alerte{{ alertes.length > 1 ? 's' : '' }}</span>
+    </div>
+    <table class="dense-table" style="margin-top:16px;">
+      <thead>
+        <tr>
+          <th>Véhicule</th>
+          <th>Type</th>
+          <th>Date échéance</th>
+          <th>Délai</th>
+          <th>Niveau</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of alertes; track a.vehiculeId + a.typeAlerte) {
+          <tr>
+            <td class="text-primary" style="font-weight:500;">{{ a.immatriculation }}</td>
+            <td class="text-secondary">{{ a.libelle }}</td>
+            <td>{{ formatDate(a.dateEvenement) }}</td>
+            <td>{{ joursRestantsTexte(a.joursRestants) }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getAlerteNiveauClass(a.niveau)">
+                {{ a.niveau }}
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<div class="actions-bar">
+  @if (canWriteVehicules()) {
+    <button class="btn btn-primary" (click)="ouvrirForm()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Nouveau véhicule
+    </button>
+  }
+  <input class="form-input search-input" type="text" [(ngModel)]="searchTerm" placeholder="Rechercher immatriculation, catégorie, moniteur..." />
+  <div class="page-count">{{ vehiculesFiltres.length }} véhicule{{ vehiculesFiltres.length !== 1 ? 's' : '' }}</div>
+</div>
+
+@if (showForm) {
+  <div class="form-section">
+    <h2 class="form-section-title">Ajouter un véhicule</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Immatriculation *</label>
+        <input class="form-input" [(ngModel)]="form.immatriculation" placeholder="12345-A-12" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Catégorie permis *</label>
+        <select class="form-input" [(ngModel)]="form.categoriePermis">
+          @for (cat of categoriesPermis; track cat) {
+            <option [value]="cat">{{ cat }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date mise en service</label>
+        <input class="form-input" type="date" [(ngModel)]="form.dateMiseService" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contrôle technique</label>
+        <input class="form-input" type="date" [(ngModel)]="form.dateControleTechnique" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Expiration assurance</label>
+        <input class="form-input" type="date" [(ngModel)]="form.dateExpirationAssurance" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Moniteur (optionnel)</label>
+        <select class="form-input" [(ngModel)]="form.moniteurId">
+          <option [ngValue]="null">— Non attribué</option>
+          @for (m of moniteurs; track m.id) {
+            <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; gap:12px; margin-top:12px;">
+      <button class="btn" (click)="fermerForm()">Annuler</button>
+      <button class="btn btn-primary" (click)="soumettreForm()">Enregistrer</button>
+    </div>
+  </div>
+}
+
+@if (loading) {
+  <div style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">Chargement...</div>
+} @else {
+  <table class="dense-table">
+    <thead>
+      <tr>
+        <th>Immatriculation</th>
+        <th>Catégorie</th>
+        <th>Mise en service</th>
+        <th>Contrôle technique</th>
+        <th>Assurance</th>
+        <th>Moniteur</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (v of vehiculesFiltres; track v.id) {
+        <tr>
+          <td class="text-primary" style="font-weight:500;">{{ v.immatriculation }}</td>
+          <td><span class="badge" [ngClass]="getCategorieBadgeClass(v.categoriePermis)">{{ v.categoriePermis }}</span></td>
+          <td class="text-secondary">{{ formatDate(v.dateMiseService) }}</td>
+          <td>{{ formatDate(v.dateControleTechnique) }}</td>
+          <td>{{ formatDate(v.dateExpirationAssurance) }}</td>
+          <td [ngClass]="getMoniteurAttribClass(v)">{{ getMoniteurNomComplet(v) }}</td>
+          <td>
+            @if (canWriteVehicules()) {
+              <button class="btn btn-inline" (click)="ouvrirAttrib(v.id)" title="Attribuer moniteur">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </button>
+            }
+          </td>
+        </tr>
+      }
+      @if (vehiculesFiltres.length === 0) {
+        <tr>
+          <td colspan="7" style="text-align:center; color: var(--text-secondary); padding: 48px 16px;">
+            Aucun véhicule enregistré
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@if (showAttribForm) {
+  <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:200;">
+    <div class="login-card" style="max-width:420px;">
+      <h2 class="form-section-title" style="margin-bottom:16px;">Attribuer un moniteur</h2>
+      <div class="form-group">
+        <label class="form-label">Moniteur</label>
+        <select class="form-input" [(ngModel)]="selectedMoniteurId">
+          <option [ngValue]="null">— Libérer le véhicule</option>
+          @for (m of moniteurs; track m.id) {
+            <option [ngValue]="m.id">{{ m.prenom }} {{ m.nom }}</option>
+          }
+        </select>
+      </div>
+      <div style="display:flex; gap:12px; margin-top:12px;">
+        <button class="btn" style="flex:1;" (click)="fermerAttrib()">Annuler</button>
+        <button class="btn btn-primary" style="flex:1;" (click)="confirmerAttrib()">Confirmer</button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,8 @@
+com\autoecole\app\tenant\MultiTenantIsolationIntegrationTest.class
+com\autoecole\app\services\PaiementServiceTest.class
+com\autoecole\app\services\CandidatServiceTest.class
+com\autoecole\app\services\RelanceServiceTest.class
+com\autoecole\app\tenant\TenantInterceptorTest.class
+com\autoecole\app\services\SeanceServiceTest.class
+com\autoecole\app\tenant\TenantContextTest.class
+com\autoecole\app\services\TresorerieServiceTest.class

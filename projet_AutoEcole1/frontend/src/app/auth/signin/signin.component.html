@@ -1,0 +1,140 @@
+<div class="login-wrapper">
+  <aside class="login-hero login-hero--car">
+    <div class="login-hero__content">
+      <div class="login-hero__brand">Auto-<em>École</em></div>
+      <span class="login-hero__accent"></span>
+      <p class="login-hero__tagline">
+        Connectez-vous à votre espace auto-école — planning, formation et trésorerie.
+      </p>
+      <a class="btn" routerLink="/" style="margin-top:28px; width:fit-content;">← Accueil</a>
+    </div>
+  </aside>
+
+  <div class="login-panel">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo-mark logo-mark--lg" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 30.5h28l-1.6-5.2a4 4 0 0 0-3.8-2.8H15.4a4 4 0 0 0-3.8 2.8L10 30.5Z" fill="currentColor" opacity=".95"/>
+            <path d="M14.2 22.5 16.8 16a2.8 2.8 0 0 1 2.6-1.7h9.2a2.8 2.8 0 0 1 2.6 1.7l2.6 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <circle cx="16.5" cy="32.5" r="3.2" fill="#0c1118" stroke="currentColor" stroke-width="1.6"/>
+            <circle cx="31.5" cy="32.5" r="3.2" fill="#0c1118" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M21 18.2h6" stroke="#0c1118" stroke-width="1.4" stroke-linecap="round" opacity=".45"/>
+          </svg>
+        </div>
+        <h1 class="login-title">Connexion</h1>
+        <p class="login-subtitle">Accédez à votre espace auto-école</p>
+      </div>
+
+      @if (errorMessage) {
+        <div class="error-banner">{{ errorMessage }}</div>
+      }
+
+      <form [formGroup]="signInForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input
+            class="form-input"
+            type="email"
+            formControlName="email"
+            autocomplete="username"
+            placeholder="vous@exemple.ma"
+          />
+          @if (signInForm.get('email')?.invalid && signInForm.get('email')?.touched) {
+            <div class="form-error">
+              @if (signInForm.get('email')?.errors?.['required']) {
+                Email requis
+              } @else if (signInForm.get('email')?.errors?.['email']) {
+                Email invalide
+              }
+            </div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <input
+            class="form-input"
+            type="password"
+            formControlName="password"
+            autocomplete="current-password"
+            placeholder="••••••••"
+          />
+          @if (signInForm.get('password')?.invalid && signInForm.get('password')?.touched) {
+            <div class="form-error">
+              @if (signInForm.get('password')?.errors?.['required']) {
+                Mot de passe requis
+              } @else if (signInForm.get('password')?.errors?.['minlength']) {
+                6 caractères minimum
+              }
+            </div>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="loading || signInForm.invalid">
+            @if (loading) {
+              Connexion…
+            } @else {
+              Se connecter
+            }
+          </button>
+        </div>
+      </form>
+
+      <p class="auth-switch">
+        Nouvel élève ?
+        <a routerLink="/inscription">Créer un compte</a>
+      </p>
+
+      <div class="accounts-panel">
+        <div class="accounts-title">Comptes démo — cliquez pour préremplir</div>
+        <table class="accounts-table">
+          <tbody>
+            @for (a of accounts; track a.email) {
+              <tr class="accounts-row" (click)="fillAccount(a.email)" title="Préremplir">
+                <td class="accounts-role">{{ a.role }}</td>
+                <td class="accounts-email"><code>{{ a.email }}</code></td>
+                <td class="accounts-pswd"><code>password123</code></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="login-divider"><span>ou mode démonstration</span></div>
+
+      <button type="button" class="demo-toggle" (click)="showDemo = !showDemo">
+        {{ showDemo ? 'Masquer' : 'Afficher' }} les accès rapides (sans backend)
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [style.transform]="showDemo ? 'rotate(180deg)' : 'none'" style="transition: transform .2s;">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
+      @if (showDemo) {
+        <div class="demo-grid" style="margin-top:14px;">
+          @for (p of presets; track p.role) {
+            <button
+              type="button"
+              class="demo-card"
+              [class]="'demo-card--' + p.accent"
+              [disabled]="loading"
+              (click)="connexionRapide(p.role)">
+              <div class="demo-icon">{{ p.icon }}</div>
+              <div class="demo-body">
+                <div class="demo-label">{{ p.label }}</div>
+                <div class="demo-desc">{{ p.description }}</div>
+              </div>
+              <svg class="demo-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          }
+        </div>
+        <div class="demo-hint">
+          <strong>Astuce :</strong> mode local. Lancez PostgreSQL + le backend pour une connexion JWT réelle.
+        </div>
+      }
+    </div>
+  </div>
+</div>

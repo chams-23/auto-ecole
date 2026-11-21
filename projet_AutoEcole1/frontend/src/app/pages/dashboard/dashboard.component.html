@@ -1,0 +1,219 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Tableau de bord</h1>
+    <p class="page-subtitle">
+      @if (isCandidat()) {
+        <span class="text-secondary">Mon parcours, mes séances et mes paiements</span>
+      } @else if (isMoniteur()) {
+        <span class="text-secondary">Mes élèves du jour, séances et suivi pédagogique</span>
+      } @else {
+        <span class="text-secondary">Vue globale de l'auto-école</span>
+      }
+    </p>
+  </div>
+  @if (isMoniteur()) {
+    <div class="context-pill context-pill--warn">
+      Moniteur · vue pédagogique
+    </div>
+  }
+  @if (isCandidat()) {
+    <div class="context-pill context-pill--go">
+      Élève · mon espace
+    </div>
+  }
+</div>
+
+<div class="metric-grid">
+  @for (m of metrics; track m.key) {
+    <div class="metric-card">
+      <div class="metric-label">{{ m.label }}</div>
+      <div class="metric-value">{{ m.value }}</div>
+    </div>
+  }
+</div>
+
+<!-- Rôle Élève : Mes séances + Mes paiements -->
+@if (isCandidat()) {
+  <div class="cards-row" style="margin-bottom:28px;">
+    <div class="detail-section" style="margin:0;">
+      <div class="detail-header">
+        <h2 class="form-section-title" style="margin:0;">Séances du jour</h2>
+        <span class="badge badge-gray">{{ seancesFiltrees.length }}</span>
+      </div>
+      @if (seancesFiltrees.length === 0) {
+        <div style="color: var(--text-secondary); text-align:center; padding:20px 0; font-size:13px;">Aucune séance prévue aujourd'hui</div>
+      } @else {
+        <table class="dense-table" style="margin-top:16px;">
+          <thead>
+            <tr><th>Horaire</th><th>Type</th><th>Moniteur</th><th>Statut</th></tr>
+          </thead>
+          <tbody>
+            @for (s of seancesFiltrees.slice(0, 5); track s.id) {
+              <tr>
+                <td style="font-weight:500;">{{ s.heureDebut }}→{{ s.heureFin }}</td>
+                <td>
+                  <span class="badge" [ngClass]="s.type === 'CONDUITE' ? 'badge-green' : 'badge-blue'">
+                    {{ s.type === 'CONDUITE' ? 'CONDUITE' : 'THÉORIE' }}
+                  </span>
+                </td>
+                <td class="text-secondary">{{ (s.intervenantPrenom || '') + ' ' + (s.intervenantNom || '') }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="getSeanceStatutDisplay(s.statutValidation).class">
+                    {{ getSeanceStatutDisplay(s.statutValidation).text }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <div class="detail-section" style="margin:0;">
+      <div class="detail-header">
+        <h2 class="form-section-title" style="margin:0;">Mes derniers paiements</h2>
+        <a class="btn btn-inline" routerLink="/tresorerie" style="text-decoration:none;">Voir tout</a>
+      </div>
+      @if (mesPaiements.length === 0) {
+        <div style="color: var(--text-secondary); text-align:center; padding:20px 0; font-size:13px;">Aucun paiement enregistré</div>
+      } @else {
+        <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+          @for (p of mesPaiements.slice(0, 4); track p.id) {
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid var(--border); border-radius:8px;">
+              <div>
+                <div style="font-weight:500;">{{ p.type === 'AVANCE' ? 'Acompte' : 'Versement' }}</div>
+                <div style="font-size:12px; color: var(--text-secondary); margin-top:2px;">{{ p.date }} · {{ p.modePaiement }}</div>
+              </div>
+              <span style="font-weight:600; color: var(--signal-go);">{{ formatMontant(p.montant || 0) }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+} @else {
+  <!-- Admin / Moniteur : Séances aujourd'hui + Alertes véhicules (Admin seulement) -->
+  <div class="cards-row" style="margin-bottom:28px;">
+    <div class="detail-section" style="margin:0;">
+      <div class="detail-header">
+        <h2 class="form-section-title" style="margin:0;">Séances d'aujourd'hui</h2>
+        <span class="badge badge-gray">{{ seancesFiltrees.length }}</span>
+      </div>
+      @if (seancesFiltrees.length === 0) {
+        <div style="color: var(--text-secondary); text-align:center; padding:20px 0; font-size:13px;">Aucune séance</div>
+      } @else {
+        <table class="dense-table" style="margin-top:16px;">
+          <thead>
+            <tr>
+              <th>Horaire</th><th>Type</th><th>Candidat</th><th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of seancesFiltrees.slice(0, 5); track s.id) {
+              <tr>
+                <td style="font-weight:500;">{{ s.heureDebut }}→{{ s.heureFin }}</td>
+                <td>
+                  <span class="badge" [ngClass]="s.type === 'CONDUITE' ? 'badge-green' : 'badge-blue'">
+                    {{ s.type === 'CONDUITE' ? 'CONDUITE' : 'THÉORIE' }}
+                  </span>
+                </td>
+                <td class="text-secondary">{{ (s.candidatPrenom || '') + ' ' + (s.candidatNom || '') }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="getSeanceStatutDisplay(s.statutValidation).class">
+                    {{ getSeanceStatutDisplay(s.statutValidation).text }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    @if (!isMoniteur()) {
+      <div class="detail-section" style="margin:0;">
+        <div class="detail-header">
+          <h2 class="form-section-title" style="margin:0;">Alertes véhicules</h2>
+          <span class="badge" [ngClass]="alertesVehicules.length > 0 ? 'badge-orange' : 'badge-gray'">{{ alertesVehicules.length }}</span>
+        </div>
+        @if (alertesVehicules.length === 0) {
+          <div style="color: var(--signal-go); text-align:center; padding:20px 0; font-size:13px;">✓ Aucune alerte active</div>
+        } @else {
+          <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+            @for (a of alertesVehicules.slice(0, 4); track a.vehiculeId + a.typeAlerte) {
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid var(--border); border-radius:8px;">
+                <div>
+                  <div style="font-weight:500;">{{ a.immatriculation }}</div>
+                  <div style="font-size:12px; color: var(--text-secondary); margin-top:2px;">{{ a.libelle }}</div>
+                </div>
+                <span class="status-badge" [ngClass]="getAlerteClass(a.niveau)">{{ a.joursRestants ?? 0 }}j</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (isMoniteur()) {
+      <div class="detail-section" style="margin:0;">
+        <div class="detail-header">
+          <h2 class="form-section-title" style="margin:0;">Rappel pédagogique</h2>
+          <span class="badge badge-gray">💡</span>
+        </div>
+        <div style="margin-top:12px; padding:12px; background: var(--bg-alt); border-radius: 8px; border: 1px solid var(--border);">
+          <div style="font-weight:500;">• Valider les séances réalisées</div>
+          <div style="font-size:12px; color: var(--text-secondary); margin-top:6px;">Pensez à déclarer effectuée chaque séance à la fin du cours.</div>
+        </div>
+        <div style="margin-top:10px; padding:12px; background: var(--bg-alt); border-radius: 8px; border: 1px solid var(--border);">
+          <div style="font-weight:500;">• Rédiger les évaluations</div>
+          <div style="font-size:12px; color: var(--text-secondary); margin-top:6px;">Utilisez le bouton "Déclarer effectuée pour accéder au formulaire d'évaluation.</div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- Derniers candidats (Admin & Moniteur) -->
+@if (!isCandidat()) {
+  <div class="detail-section">
+    <div class="detail-header">
+      <h2 class="form-section-title" style="margin:0;">
+        @if (isMoniteur()) { Mes élèves } @else { Derniers candidats }
+      </h2>
+      <a class="btn btn-inline" routerLink="/candidats" style="text-decoration:none;">Voir tout</a>
+    </div>
+    <table class="dense-table" style="margin-top:16px;">
+      <thead>
+        <tr>
+          <th>Nom prénom</th>
+          <th>Catégorie</th>
+          <th>Statut</th>
+          <th>Heures conduite</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of candidatsFiltres.slice(0, 6); track c.id || c.cin) {
+          <tr>
+            <td style="font-weight:500;">{{ c.prenom }} {{ c.nom }}</td>
+            <td><span class="badge" [ngClass]="getCategorieBadgeClass(c.categoriePermis)">{{ c.categoriePermis }}</span></td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatutDisplay(c.statutParcours).class">
+                {{ getStatutDisplay(c.statutParcours).text }}
+              </span>
+            </td>
+            <td class="text-secondary">
+              {{ c.heuresConduiteValidees || 0 }}h validées
+            </td>
+          </tr>
+        }
+        @if (candidatsFiltres.length === 0) {
+          <tr>
+            <td colspan="4" style="text-align:center; color: var(--text-secondary); padding: 28px 16px;">
+              Aucun candidat
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

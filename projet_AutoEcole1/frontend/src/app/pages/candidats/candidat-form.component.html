@@ -1,0 +1,120 @@
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+  <div>
+    <a class="btn btn-inline" routerLink="/candidats" style="margin-bottom:12px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+      Retour
+    </a>
+    <h1 class="page-title" style="margin:0;">
+      {{ mode === 'nouveau' ? 'Nouveau candidat' : 'Modifier le candidat' }}
+    </h1>
+  </div>
+</div>
+
+@if (showToast) {
+  <div class="toast-success" [ngClass]="{ 'toast-stop': toastType === 'error' }">{{ toastMessage }}</div>
+}
+
+<form [formGroup]="candidatForm" (ngSubmit)="onSubmit()">
+  <div class="form-section">
+    <div class="form-section-title">Informations personnelles</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Nom *</label>
+        <input class="form-input" type="text" formControlName="nom" placeholder="Nom" />
+        @if (candidatForm.get('nom')?.invalid && candidatForm.get('nom')?.touched) {
+          <div class="form-error">Nom requis</div>
+        }
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prénom *</label>
+        <input class="form-input" type="text" formControlName="prenom" placeholder="Prénom" />
+        @if (candidatForm.get('prenom')?.invalid && candidatForm.get('prenom')?.touched) {
+          <div class="form-error">Prénom requis</div>
+        }
+      </div>
+      <div class="form-group">
+        <label class="form-label">CIN *</label>
+        <input class="form-input" type="text" formControlName="cin" placeholder="AB123456" />
+        @if (candidatForm.get('cin')?.invalid && candidatForm.get('cin')?.touched) {
+          <div class="form-error">
+            @if (candidatForm.get('cin')?.errors?.['required']) { CIN requis }
+            @else if (candidatForm.get('cin')?.errors?.['pattern']) { Format CIN invalide }
+          </div>
+        }
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email *</label>
+        <input class="form-input" type="email" formControlName="email" placeholder="exemple@email.com" />
+        @if (candidatForm.get('email')?.invalid && candidatForm.get('email')?.touched) {
+          <div class="form-error">
+            @if (candidatForm.get('email')?.errors?.['required']) { Email requis }
+            @else if (candidatForm.get('email')?.errors?.['email']) { Email invalide }
+          </div>
+        }
+      </div>
+      <div class="form-group">
+        <label class="form-label">Téléphone *</label>
+        <input class="form-input" type="tel" formControlName="telephone" placeholder="0612345678" />
+        @if (candidatForm.get('telephone')?.invalid && candidatForm.get('telephone')?.touched) {
+          <div class="form-error">
+            @if (candidatForm.get('telephone')?.errors?.['required']) { Téléphone requis }
+            @else if (candidatForm.get('telephone')?.errors?.['pattern']) { Format téléphone invalide }
+          </div>
+        }
+      </div>
+      <div></div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe {{ mode === 'nouveau' ? '*' : '(laisser vide pour conserver)' }}</label>
+        <input class="form-input" type="password" formControlName="password" placeholder="••••••••" />
+        @if (candidatForm.get('password')?.invalid && candidatForm.get('password')?.touched) {
+          <div class="form-error">
+            @if (candidatForm.get('password')?.errors?.['required']) { Mot de passe requis }
+            @else if (candidatForm.get('password')?.errors?.['minlength']) { 6 caractères minimum }
+          </div>
+        }
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmation {{ mode === 'nouveau' ? '*' : '' }}</label>
+        <input class="form-input" type="password" formControlName="confirmPassword" placeholder="••••••••" />
+        @if (candidatForm.get('confirmPassword')?.touched && candidatForm.errors?.['passwordsMismatch']) {
+          <div class="form-error">Les mots de passe ne correspondent pas</div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-title">Parcours</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Catégorie de permis *</label>
+        <select class="form-input" formControlName="categoriePermis">
+          @for (c of categories; track c.value) {
+            <option [value]="c.value">{{ c.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Forfait *</label>
+        <select class="form-input" formControlName="forfaitId">
+          @for (f of forfaits; track f.value) {
+            <option [value]="f.value">{{ f.label }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions" style="display:flex; gap:12px; justify-content:flex-end;">
+    <button type="button" class="btn" routerLink="/candidats">Annuler</button>
+    <button type="submit" class="btn btn-primary" [disabled]="loading">
+      @if (loading) {
+        Enregistrement...
+      } @else {
+        {{ mode === 'nouveau' ? 'Créer le candidat' : 'Enregistrer les modifications' }}
+      }
+    </button>
+  </div>
+</form>
